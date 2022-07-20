@@ -1,0 +1,152 @@
+---
+### DEPLOY DJANGO
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: django-test-deployment
+spec:
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: django-test
+    spec:
+      containers:
+      - name: django-test-pod
+        image: lauramble/vizfada-django-test:latest
+        ports:
+        - containerPort: 8080
+  selector:
+    matchLabels: 
+      app: django-test
+---
+### SERVICE DJANGO
+apiVersion: v1
+kind: Service
+metadata:
+  name: django-test-svc
+  labels:
+    app: django-test
+spec:
+  ports:
+  - port: 8000
+    targetPort: 8080
+  selector:
+    app: django-test
+---
+### DEPLOY ANGULAR
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ng-test-deployment
+spec:
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: ng-test
+    spec:
+      containers:
+      - name: ng-test-pod
+        image: lauramble/vizfada-ng-test:latest
+        ports:
+        - containerPort: 4200
+  selector:
+    matchLabels: 
+      app: ng-test
+---
+### SERVICE ANGULAR
+apiVersion: v1
+kind: Service
+metadata:
+  name: ng-test-svc
+  labels:
+    app: ng-test
+spec:
+  ports:
+  - port: 4200
+    targetPort: 4200
+  selector:
+    app: ng-test
+---
+### DEPLOY DATA
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: data-test-deployment
+spec:
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: data-test
+    spec:
+      containers:
+        - name: data-test-pod
+          image: lauramble/vizfada-data-test:latest
+          resources:
+            requests: 
+              ephemeral-storage: "32Gi"
+            limits:
+              ephemeral-storage: "128Gi"
+          volumeMounts:
+            - mountPath: "/usr/share/nginx/data"
+              name: test-data
+          ports:
+            - containerPort: 90
+      volumes:
+        - name: test-data
+          persistentVolumeClaim:
+            claimName: test-data
+  selector:
+    matchLabels: 
+      app: data-test
+---
+### SERVICE DATA
+apiVersion: v1
+kind: Service
+metadata:
+  name: data-test-svc
+  labels:
+    app: data-test
+spec:
+  ports:
+  - port: 90
+    targetPort: 90
+  selector:
+    app: data-test
+---
+### CREATE INGRESS
+apiVersion: extensions/v1beta1
+kind: Ingress
+metadata:
+  annotations:
+    nginx.ingress.kubernetes.io/cors-allow-origin: '*'
+    nginx.ingress.kubernetes.io/rewrite-target: /$2
+  name: ingress-vizfada
+spec:
+  ingressClassName: nginx
+  rules:
+  - host: viz.faang.org
+    http:
+      paths:
+      - backend:
+          serviceName: ng-test-svc
+          servicePort: 4200
+        path: /((.*))
+        pathType: Prefix
+      - backend:
+          serviceName: django-test-svc
+          servicePort: 8080
+        path: /django(/|$)(.*)
+        pathType: Prefix
+      - backend:
+          serviceName: data-test-svc
+          servicePort: 90
+        path: /data(/|$)(.*)
+        pathType: Prefix
+  tls:
+  - hosts:
+    - viz.faang.org
+    secretName: vizfada
+---

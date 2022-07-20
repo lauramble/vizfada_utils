@@ -3,9 +3,8 @@
 # cd /path/to/species/rnaseq/salmon
 exps=$(ls -d ERX*)
 echo $exps
-# data/species/SPECIES/rnaseq/salmon
-root=/home/lmorel/VizFaDa/vizfada-app/Data/data
-SPECIES=chicken
+root=/path/to/data
+SPECIES=chicken #change to species to process
 cd $root/species/$SPECIES/rnaseq/salmon
 exps=$(ls -d ERX*)
 for exp in $exps
@@ -38,9 +37,12 @@ do
 done
 
 ##### CHIPSEQ
+
+## Uncomment if running separately from above code
 # cd /path/to/species/chipseq
-root=/home/lmorel/VizFaDa/vizfada-app/Data/data
-SPECIES=chicken
+# root=/path/to/data
+# SPECIES=chicken #change to species to process
+
 chipseq=$root/species/$SPECIES/chipseq
 experiments=$root/experiments
 
